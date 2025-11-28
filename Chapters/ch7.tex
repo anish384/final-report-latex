@@ -1,0 +1,434 @@
+\chapter{IMPLEMENTATION}
+
+\section{Directory Structure}
+
+\begin{figure}[ht]
+	\centering
+	\begin{minipage}{0.9\textwidth} % Fits within margins
+		\small % Changed from \scriptsize to \small (or use \normalsize for even bigger)
+		\begin{verbatim}
+			.
+			|-- extract_features_from_dataset.py
+			|-- src
+			|   |-- __init__.py
+			|   |-- deep_learning_model.py
+		\end{verbatim}
+	\end{minipage}
+	\caption{Project Directory Structure}
+	\label{fig:project_structure}
+\end{figure}
+
+\section{Sample Code}
+
+\begin{lstlisting}[language=Python, caption=src/\_\_init\_\_.py]
+__version__ = "1.0.0"
+__author__ = "fMRI ML Project"
+
+from .data_loader import FMRIDataLoader, FMRIPreprocessor
+from .feature_extraction import ConnectomeExtractor, TrialBasedExtractor
+from .classical_models import ClassicalMLPipeline, compare_models
+from .deep_learning_models import ConnectomeCNN
+from .pipeline import EmotionDetectionPipeline
+from .visualization import ResultsVisualizer
+
+__all__ = [
+'FMRIDataLoader',
+'FMRIPreprocessor',
+'ConnectomeExtractor',
+'TrialBasedExtractor',
+'ClassicalMLPipeline',
+'compare_models',
+'ConnectomeCNN',
+'EmotionDetectionPipeline',
+'ResultsVisualizer'
+]
+
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption=src/deep\_learning\_model.py]
+import numpy as np
+from typing import Tuple, Dict, Optional
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers, models, callbacks
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import classification_report, confusion_matrix
+
+class ConnectomeCNN:
+def __init__(self, input_shape: Tuple[int, int], n_classes: int, architecture: str = 'simple'):
+self.input_shape = input_shape + (1,)
+self.n_classes = n_classes
+self.architecture = architecture
+self.model = None
+self.history = None
+self.label_encoder = LabelEncoder()
+self._build_model()
+
+def _build_model(self):
+print(f" Building {self.architecture} CNN architecture...")
+if self.architecture == 'simple':
+self.model = self._build_simple_cnn()
+elif self.architecture == 'deep':
+self.model = self._build_deep_cnn()
+elif self.architecture == 'resnet':
+self.model = self._build_resnet()
+else:
+raise ValueError(f"Unknown architecture: {self.architecture}")
+print(f"Model built")
+print(f"Total parameters: {self.model.count_params():,}")
+
+def _build_simple_cnn(self) -> keras.Model:
+model = models.Sequential([
+layers.Input(shape=self.input_shape),
+layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
+layers.BatchNormalization(),
+layers.MaxPooling2D((2, 2)),
+layers.Dropout(0.25),
+layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+layers.BatchNormalization(),
+layers.MaxPooling2D((2, 2)),
+layers.Dropout(0.25),
+layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
+layers.BatchNormalization(),
+layers.GlobalAveragePooling2D(),
+layers.Dense(128, activation='relu'),
+layers.Dropout(0.5),
+layers.Dense(64, activation='relu'),
+layers.Dropout(0.5),
+layers.Dense(self.n_classes, activation='softmax')
+])
+return model
+
+def _build_deep_cnn(self) -> keras.Model:
+model = models.Sequential([
+layers.Input(shape=self.input_shape),
+layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
+layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
+layers.BatchNormalization(),
+layers.MaxPooling2D((2, 2)),
+layers.Dropout(0.25),
+layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+layers.BatchNormalization(),
+layers.MaxPooling2D((2, 2)),
+layers.Dropout(0.25),
+layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
+layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
+layers.BatchNormalization(),
+layers.MaxPooling2D((2, 2)),
+layers.Dropout(0.25),
+layers.Conv2D(256, (3, 3), activation='relu', padding='same'),
+layers.BatchNormalization(),
+layers.GlobalAveragePooling2D(),
+layers.Dense(256, activation='relu'),
+layers.Dropout(0.5),
+layers.Dense(128, activation='relu'),
+layers.Dropout(0.5),
+layers.Dense(self.n_classes, activation='softmax')
+])
+return model
+
+def _build_resnet(self) -> keras.Model:
+inputs = layers.Input(shape=self.input_shape)
+x = layers.Conv2D(32, (3, 3), padding='same')(inputs)
+x = layers.BatchNormalization()(x)
+x = layers.Activation('relu')(x)
+shortcut = x
+x = layers.Conv2D(32, (3, 3), padding='same')(x)
+x = layers.BatchNormalization()(x)
+x = layers.Activation('relu')(x)
+x = layers.Conv2D(32, (3, 3), padding='same')(x)
+x = layers.BatchNormalization()(x)
+x = layers.Add()([x, shortcut])
+x = layers.Activation('relu')(x)
+x = layers.MaxPooling2D((2, 2))(x)
+shortcut = layers.Conv2D(64, (1, 1), padding='same')(x)
+x = layers.Conv2D(64, (3, 3), padding='same')(x)
+x = layers.BatchNormalization()(x)
+x = layers.Activation('relu')(x)
+x = layers.Conv2D(64, (3, 3), padding='same')(x)
+x = layers.BatchNormalization()(x)
+x = layers.Add()([x, shortcut])
+x = layers.Activation('relu')(x)
+x = layers.MaxPooling2D((2, 2))(x)
+shortcut = layers.Conv2D(128, (1, 1), padding='same')(x)
+x = layers.Conv2D(128, (3, 3), padding='same')(x)
+x = layers.BatchNormalization()(x)
+x = layers.Activation('relu')(x)
+x = layers.Conv2D(128, (3, 3), padding='same')(x)
+x = layers.BatchNormalization()(x)
+x = layers.Add()([x, shortcut])
+x = layers.Activation('relu')(x)
+x = layers.GlobalAveragePooling2D()(x)
+x = layers.Dense(256, activation='relu')(x)
+x = layers.Dropout(0.5)(x)
+x = layers.Dense(128, activation='relu')(x)
+x = layers.Dropout(0.5)(x)
+outputs = layers.Dense(self.n_classes, activation='softmax')(x)
+model = models.Model(inputs=inputs, outputs=outputs)
+return model
+
+def compile_model(self, learning_rate: float = 0.001, optimizer: str = 'adam'):
+print(f"Compiling model...")
+if optimizer == 'adam':
+opt = keras.optimizers.Adam(learning_rate=learning_rate)
+elif optimizer == 'sgd':
+opt = keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9)
+elif optimizer == 'rmsprop':
+opt = keras.optimizers.RMSprop(learning_rate=learning_rate)
+else:
+raise ValueError(f"Unknown optimizer: {optimizer}")
+self.model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy', keras.metrics.AUC(name='auc')])
+print(f"Model compiled with {optimizer} optimizer (lr={learning_rate})")
+
+def prepare_data(self, connectomes: np.ndarray, labels: list, test_size: float = 0.2, val_size: float = 0.1) -> Tuple:
+print(f"\nPreparing data for CNN...")
+X = connectomes[..., np.newaxis]
+y_encoded = self.label_encoder.fit_transform(labels)
+y_categorical = to_categorical(y_encoded, num_classes=self.n_classes)
+X_train, X_test, y_train, y_test = train_test_split(X, y_categorical, test_size=test_size, random_state=42, stratify=y_encoded)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=val_size, random_state=42)
+print(f"Train set: {X_train.shape[0]} samples")
+print(f" Validation set: {X_val.shape[0]} samples")
+print(f" Test set: {X_test.shape[0]} samples")
+print(f" Input shape: {X_train.shape[1:]}")
+print(f" Classes: {self.label_encoder.classes_}")
+return X_train, X_val, X_test, y_train, y_val, y_test
+
+def train(self, X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray, epochs: int = 50, batch_size: int = 32, use_callbacks: bool = True) -> keras.callbacks.History:
+print(f"\nTraining CNN for {epochs} epochs...")
+callback_list = []
+if use_callbacks:
+early_stop = callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True, verbose=1)
+callback_list.append(early_stop)
+reduce_lr = callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-7, verbose=1)
+callback_list.append(reduce_lr)
+self.history = self.model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size, callbacks=callback_list, verbose=1)
+print(f"  Training completed")
+return self.history
+
+def evaluate(self, X_test: np.ndarray, y_test: np.ndarray) -> Dict:
+print(f"\nEvaluating CNN...")
+test_loss, test_acc, test_auc = self.model.evaluate(X_test, y_test, verbose=0)
+y_pred_proba = self.model.predict(X_test, verbose=0)
+y_pred = np.argmax(y_pred_proba, axis=1)
+y_true = np.argmax(y_test, axis=1)
+results = {'loss': test_loss, 'accuracy': test_acc, 'auc': test_auc, 'predictions': y_pred, 'true_labels': y_true, 'probabilities': y_pred_proba}
+print(f"  Test Loss: {test_loss:.4f}")
+print(f"  Test Accuracy: {test_acc:.4f}")
+print(f"  Test AUC: {test_auc:.4f}")
+return results
+
+def plot_training_history(self, save_path: Optional[str] = None):
+if self.history is None:
+raise ValueError("Model must be trained first")
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+axes[0].plot(self.history.history['accuracy'], label='Train')
+axes[0].plot(self.history.history['val_accuracy'], label='Validation')
+axes[0].set_title('Model Accuracy', fontsize=14, fontweight='bold')
+axes[0].set_xlabel('Epoch', fontsize=12)
+axes[0].set_ylabel('Accuracy', fontsize=12)
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
+axes[1].plot(self.history.history['loss'], label='Train')
+axes[1].plot(self.history.history['val_loss'], label='Validation')
+axes[1].set_title('Model Loss', fontsize=14, fontweight='bold')
+axes[1].set_xlabel('Epoch', fontsize=12)
+axes[1].set_ylabel('Loss', fontsize=12)
+axes[1].legend()
+axes[1].grid(True, alpha=0.3)
+plt.tight_layout()
+if save_path:
+plt.savefig(save_path, dpi=300, bbox_inches='tight')
+print(f"Saved to {save_path}")
+plt.show()
+
+def plot_confusion_matrix(self, y_true: np.ndarray, y_pred: np.ndarray, save_path: Optional[str] = None):
+cm = confusion_matrix(y_true, y_pred)
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=self.label_encoder.classes_, yticklabels=self.label_encoder.classes_)
+plt.title(f'Confusion Matrix - CNN ({self.architecture})', fontsize=14, fontweight='bold')
+plt.ylabel('True Label', fontsize=12)
+plt.xlabel('Predicted Label', fontsize=12)
+plt.tight_layout()
+if save_path:
+plt.savefig(save_path, dpi=300, bbox_inches='tight')
+print(f"Saved to {save_path}")
+plt.show()
+
+def print_classification_report(self, y_true: np.ndarray, y_pred: np.ndarray):
+print("\n" + "="*60)
+print("CLASSIFICATION REPORT")
+print("="*60)
+print(classification_report(y_true, y_pred, target_names=self.label_encoder.classes_, digits=4))
+
+def save_model(self, filepath: str):
+self.model.save(filepath)
+print(f"Model saved to {filepath}")
+
+def load_model(self, filepath: str):
+self.model = keras.models.load_model(filepath)
+print(f"Model loaded from {filepath}")
+
+def summary(self):
+self.model.summary()
+\end{lstlisting}
+
+\newpage
+\begin{lstlisting}[language=Python,caption=extract\_features\_from\_dataset.py]
+import sys
+sys.path.append('src')
+import numpy as np
+import pickle
+from pathlib import Path
+from data_loader import FMRIDataLoader
+from feature_extraction import ConnectomeExtractor
+from nilearn import image
+from collections import Counter
+from dataset_config import get_dataset_config
+import warnings
+warnings.filterwarnings('ignore')
+
+print("\n" + "="*80)
+print("EXTRACTING FEATURES - ONE TIME ONLY")
+print("="*80 + "\n")
+
+DATASET_NAME = 'ds003548'
+config = get_dataset_config(DATASET_NAME)
+dataset_path = "ds003548"
+loader = FMRIDataLoader(dataset_path, task=config['task'])
+
+print("    Initializing extractors...")
+
+import io
+import contextlib
+def silent_extract_connectome(extractor, window_img):
+with contextlib.redirect_stdout(io.StringIO()):
+time_series = extractor.extract_time_series(window_img)
+connectome = extractor.connectivity_measure.fit_transform([time_series])[0]
+return connectome
+
+extractors = {
+	'harvard_oxford': ConnectomeExtractor(atlas_name='harvard_oxford'),
+	'aal': ConnectomeExtractor(atlas_name='aal'),
+	'destrieux': ConnectomeExtractor(atlas_name='destrieux')
+}
+
+all_connectomes = []
+all_labels = []
+subject_ids = []
+run_ids = []
+
+subjects_to_process = [f'sub-{i:02d}' for i in range(1, 17)]
+runs_to_process = [1, 2, 3, 4, 5]
+
+
+print(f"    (This will take a while, but only needs to be done once)\n")
+
+total_windows = 0
+for subject_idx, subject in enumerate(subjects_to_process):
+print(f"{subject}...", end='', flush=True)
+subject_windows = 0
+for run in runs_to_process:
+try:
+bold_img = loader.load_bold(subject, "", run)
+events_df = loader.load_events(subject, "", run)
+events_df = events_df[~events_df[config['label_column']].isin(config['exclude_labels'])]
+if len(events_df) == 0:
+continue
+trial_volumes = loader.get_trial_volumes(events_df, tr=config['tr'], label_column=config['label_column'], trial_type_filter=config.get('trial_type_filter'), exclude_labels=config.get('exclude_labels'))
+window_size = 8
+stride = 4
+n_volumes = bold_img.shape[3]
+for start in range(0, n_volumes - window_size + 1, stride):
+end = start + window_size
+window_img = image.index_img(bold_img, slice(start, end))
+overlapping_emotions = []
+for trial_start, trial_end, emotion in trial_volumes:
+if not (trial_end <= start or trial_start >= end):
+overlapping_emotions.append(emotion)
+if len(overlapping_emotions) == 0:
+continue
+emotion_counts = Counter(overlapping_emotions)
+majority_emotion, count = emotion_counts.most_common(1)[0]
+if count / len(overlapping_emotions) < 0.7:
+continue
+try:
+connectome_features = []
+for atlas_name, extractor in extractors.items():
+connectome = silent_extract_connectome(extractor, window_img)
+triu_indices = np.triu_indices_from(connectome, k=1)
+connectome_flat = connectome[triu_indices]
+connectome_features.extend(connectome_flat)
+all_connectomes.append(connectome_features)
+all_labels.append(majority_emotion)
+subject_ids.append(subject_idx)
+run_ids.append(run)
+subject_windows += 1
+except Exception as e:
+continue
+except Exception as e:
+continue
+if subject_windows > 0:
+print(f"{subject_windows} windows")
+total_windows += subject_windows
+else:
+print(f"No data")
+
+print(f"\n    Converting to arrays...")
+try:
+all_connectomes = np.array(all_connectomes)
+except ValueError:
+min_size = min(len(conn) for conn in all_connectomes)
+print(f"Different feature sizes. Truncating to {min_size} features.")
+all_connectomes = np.array([conn[:min_size] for conn in all_connectomes])
+
+all_labels = np.array(all_labels)
+subject_ids = np.array(subject_ids)
+run_ids = np.array(run_ids)
+
+print(f"\nExtracted {len(all_connectomes)} samples")
+print(f"    Feature dimensions: {all_connectomes.shape}")
+
+label_counts = Counter(all_labels)
+print(f"\nLabel distribution:")
+for emotion in config['emotions']:
+count = label_counts.get(emotion, 0)
+percentage = (count / len(all_labels) * 100) if len(all_labels) > 0 else 0
+print(f"      {emotion}: {count} samples ({percentage:.1f}%)")
+
+output_dir = Path("extracted_features")
+output_dir.mkdir(exist_ok=True)
+
+features_data = {
+	'connectomes': all_connectomes,
+	'labels': all_labels,
+	'subject_ids': subject_ids,
+	'run_ids': run_ids,
+	'dataset_name': DATASET_NAME,
+	'config': config,
+	'extractor_config': {
+		'atlases': list(extractors.keys()),
+		'connectivity_kind': 'correlation'
+	},
+	'window_config': {
+		'window_size': 8,
+		'stride': 4,
+		'majority_threshold': 0.7
+	}
+}
+
+output_path = output_dir / "ds003548_features.pkl"
+with open(output_path, 'wb') as f:
+pickle.dump(features_data, f)
+
+print(f"\nFeatures saved to: {output_path}")
+print(f"\nEXTRACTION COMPLETE!")
+print(f"    Now run: python train_loso_from_features.py")
+print(f"\n{'='*80}\n")
+
+\end{lstlisting}

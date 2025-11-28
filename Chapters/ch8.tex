@@ -1,0 +1,49 @@
+\chapter{SNAPSHOTS}
+
+\section{System Interface and Workflow}
+
+\hspace{0.5cm}The proposed Mind Matrix AI system provides a user-friendly web interface for decoding emotional states from fMRI data. The following subsections detail the workflow from initialization to result interpretation.
+
+\subsection{Home Interface}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=1\textwidth]{1_pt.png}
+	\captionsetup{name=Snapshot}
+	\caption{Mind Matrix AI Landing Page}
+	\label{fig:home_page}
+\end{figure}
+
+The application entry point creates a unified environment for brain signal analysis. As shown in Snapshot \ref{fig:home_page}, the dashboard is titled "Mind Matrix AI: Brain Decoding System using fMRI and Deep Learning." It features a streamlined navigation bar allowing users to switch between the Home view, Emotion analysis, History logs, and System Metrics, establishing the platform's focus on deep learning-based neuroimaging analysis.
+
+\subsection{Data Input and Upload}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=1\textwidth]{2_pt.png}
+	\captionsetup{name=Snapshot}
+	\caption{fMRI NIfTI Data Upload Interface}
+	\label{fig:upload_page}
+\end{figure}
+
+\hspace{0.5cm}Snapshot \ref{fig:upload_page} illustrates the data ingestion stage. The system accepts raw or preprocessed brain scans in standard NIfTI formats (\texttt{.nii} or \texttt{.nii.gz}). The interface provides a drag-and-drop zone capable of handling large 4D fMRI files (up to 1GB). In this instance, a subject file (\texttt{sub-05\_task-emotionalfaces...}) has been successfully verified, and the system is ready to initiate the 3D CNN processing pipeline via the "Start Analysis" control.
+
+\subsection{Classification Results}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=1\textwidth]{3_pt.png}
+	\captionsetup{name=Snapshot}
+	\caption{Emotion Prediction and Confidence Metrics}
+	\label{fig:results_page}
+\end{figure}
+
+Upon completion of the inference process, the system displays the classification results (Snapshot \ref{fig:results_page}). The model identifies the primary emotional state in this case, \textbf{Neutral} with a specific confidence score (27.0\%). The dashboard also provides a breakdown of probability distributions across other trained classes (Happy, Sad, Angry) and reports the total processing time (32.51s), ensuring transparency regarding the model's certainty and computational efficiency.
+
+\subsection{Interpretability and Regional Importance}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.9\textwidth]{4-pt.png}
+	\captionsetup{name=Snapshot}
+	\caption{Feature Importance and Brain Region Activation}
+	\label{fig:importance_chart}
+\end{figure}
+
+To address the "black box" nature of deep learning, the system includes an explainability module shown in Snapshot \ref{fig:importance_chart}. This chart ranks the top 10 brain regions that contributed most significantly to the model's decision. For the predicted neutral state, the \textbf{Left Cuneus} (Cuneus\_L) and specific cerebellar regions were identified as the most influential features. The visualization aids researchers in correlating deep learning predictions with known neurobiological functions.

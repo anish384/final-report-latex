@@ -1,0 +1,162 @@
+\documentclass[12pt, a4paper]{report}
+
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{subcaption}
+\usepackage{lipsum}
+\usepackage{setspace}
+\usepackage[hidelinks]{hyperref}
+\usepackage[left=1.25in, right=1in, top=0.75in, bottom=0.75in]{geometry}
+\usepackage{mathptmx}
+\usepackage[numbers]{natbib}
+\usepackage{emptypage}
+\usepackage[nottoc, notlof]{tocbibind}
+\renewcommand{\bibname}{REFERENCES}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit, calc}
+\usepackage{graphicx}\graphicspath{{img/}}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{dirtree}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage{listings}
+
+% --- PACKAGES FOR NUMBERING ---
+\usepackage{chngcntr} 
+
+\lstset{
+	basicstyle=\small\rmfamily,
+	columns=fullflexible,   % changing to fullflexible handles spaces better in text fonts
+	breaklines=true,
+	showstringspaces=false, % This removes the black squares/markers in strings
+	keepspaces=true         % This ensures indentation spaces aren't collapsed
+}
+
+% Adjust Chapter Spacing
+\titleformat{\chapter}[display]
+{\normalfont\huge\bfseries}{\raggedright\chaptertitlename\ \thechapter}{5pt}{\centering\Huge}
+\titlespacing*{\chapter}{-9pt}{-40pt}{15pt}
+
+% --- TOC AND LOF SETTINGS ---
+\usepackage{tocloft}
+
+% 1. Space adjustments
+\setlength{\cftbeforetoctitleskip}{-1em} 
+\setlength{\cftaftertoctitleskip}{10pt} 
+\setlength{\cftbeforeloftitleskip}{-1em}
+\setlength{\cftafterloftitleskip}{10pt}
+
+% 2. REMOVE DOTS
+\renewcommand{\cftsecdotsep}{\cftnodots}
+\renewcommand{\cftsubsecdotsep}{\cftnodots}
+\renewcommand{\cftfigdotsep}{\cftnodots}
+
+% 3. CHANGE FIGURE NUMBERING HIERARCHY (The fix)
+% Keep the reset at subsection level
+\counterwithin{figure}{subsection} 
+
+% 4. INTELLIGENT LABELING
+% This removes the ".0." if you are not inside a subsection
+\renewcommand{\thefigure}{%
+	\ifnum\value{subsection}=0
+	\thesection.\arabic{figure}%      -> Prints 6.1.1
+	\else
+	\thesubsection.\arabic{figure}%   -> Prints 4.3.1.1
+	\fi
+}
+
+% 5. ADJUST LIST OF FIGURES INDENTATION
+\setlength{\cftfignumwidth}{4.5em} 
+
+% -----------------------------------
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% Page style setup
+\pagestyle{fancy}
+\fancyhf{}
+\setlength{\headheight}{30pt}
+\definecolor{burgundy}{RGB}{128,0,32}
+\renewcommand{\headrulewidth}{2pt}
+\renewcommand{\footrulewidth}{2pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{burgundy}\leaders\hrule height \headrulewidth\hfill}}
+\renewcommand{\footrule}{\hbox to\headwidth{\color{burgundy}\leaders\hrule height \footrulewidth\hfill}}
+\fancyhead[L]{Brain Decoding system using fMRI Data and Deep learning}
+\fancyhead[C]{}
+\fancyfoot[L]{Dept. of CSE, AITM, Belagavi}
+\fancyfoot[R]{\thepage}
+
+% Redefine plain style for chapter first pages
+\fancypagestyle{plain}{
+	\fancyhf{}
+	\fancyhead[L]{Brain Decoding system using fMRI Data and Deep learning}
+	\fancyhead[C]{}
+	\fancyfoot[L]{Dept. of CSE, AITM, Belagavi}
+	\fancyfoot[R]{\thepage}
+	\renewcommand{\headrulewidth}{2pt}
+	\renewcommand{\footrulewidth}{2pt}
+	\renewcommand{\headrule}{\hbox to\headwidth{\color{burgundy}\leaders\hrule height \headrulewidth\hfill}}
+	\renewcommand{\footrule}{\hbox to\headwidth{\color{burgundy}\leaders\hrule height \footrulewidth\hfill}}
+}
+
+\begin{document}
+	
+	% Front matter with Roman numerals
+	\pagenumbering{roman}
+	
+	% Generate table of contents
+	\begin{singlespace}
+		\tableofcontents
+	\end{singlespace}
+	\newpage
+	
+	% Generate list of figures
+	\begin{singlespace}
+		\listoffigures
+	\end{singlespace}
+	\newpage
+	
+	% Start Double Spacing for the actual content
+	\doublespacing
+	
+	% Abstract
+	\thispagestyle{empty}
+	\begin{center}
+		\large\textbf{ABSTRACT}
+	\end{center}
+	\vspace{0.5cm}
+	
+	Brain decoding from functional Magnetic Resonance Imaging (fMRI) represents a transformative approach in cognitive neuroscience for understanding neural mechanisms underlying human emotions. This work presents a deep learning-based brain decoding system that automatically recognizes emotional states from fMRI recordings. A convolutional neural network (CNN) architecture specifically designed for functional connectivity matrix classification, integrating features from three complementary brain parcellation atlases (Harvard-Oxford, AAL, and Destrieux). The deep learning model processes connectivity patterns as 2D images, learning hierarchical representations directly from data. Validation on the ds003548 emotional faces dataset containing 16 subjects and four emotion categories demonstrates that our CNN-based brain decoding system achieves 84\% classification accuracy, significantly outperforming traditional machine learning approaches (68-76\% accuracy). The deep learning framework automatically discovers discriminative connectivity patterns without manual feature engineering, with Leave-One-Subject-Out cross-validation confirming robust generalization to unseen individuals. Results establish deep learning as a superior approach for brain decoding applications, with implications for brain-computer interfaces, affective disorder diagnosis, and cognitive neuroscience research.
+	
+	\textbf{Keywords:} brain decoding, deep learning, fMRI analysis, convolutional neural networks, emotion recognition, functional connectivity
+	
+	\clearpage
+	
+	% Main content with Arabic numerals
+	\pagenumbering{arabic}
+	
+	% Include your chapters
+	\nocite{ref1,ref2,ref3,ref4,ref5,ref6,ref7,ref8}
+	\include{Chapters/ch1}
+	\include{Chapters/ch2}
+	\include{Chapters/ch3}
+	\include{Chapters/ch4}
+	\include{Chapters/ch5}
+	\include{Chapters/ch6}
+	\include{Chapters/ch7}
+	\include{Chapters/ch8}
+	\include{Chapters/ch9}
+	
+	% Bibliography
+	\singlespacing
+	% \addcontentsline{toc}{chapter}{}
+	\bibliographystyle{IEEEtran}
+	\bibliography{mybib}
+	
+\end{document}

@@ -1,0 +1,54 @@
+\chapter{METHODOLOGY}
+
+\section{System Overview}
+\hspace{0.5cm}The proposed brain decoding system is designed as a comprehensive, end-to-end computational pipeline that transforms raw neuroimaging data into precise cognitive state predictions. Unlike traditional approaches that rely on static analysis, this system utilizes a multi-stage workflow comprising data acquisition, rigorous preprocessing, sliding-window feature extraction, and advanced deep learning classification. The core innovation of this architecture lies in its multi-atlas ensemble approach; rather than relying on a single anatomical definition of brain regions, the system aggregates features across multiple scales of brain organization. Data flows sequentially through the pipeline: raw fMRI scans are first cleaned and normalized to remove noise, then segmented into temporal windows to capture dynamic brain activity. These segments are converted into functional connectivity matrices, which serve as the input for the Convolutional Neural Network (CNN) ensemble. This hierarchical structure ensures that the model captures both local temporal fluctuations and global spatial dependencies, resulting in a robust emotion detection framework.
+
+\section{Dataset Description}
+\hspace{0.5cm}To benchmark the efficacy of the proposed model, we utilize the \textbf{OpenNeuro ds003548 (Emotional Faces)} dataset, a standardized repository for emotion-related fMRI research. The dataset comprises neuroimaging data from 16 healthy adult subjects, aged between 18 and 35 years, ensuring a representative sample of young adult brain activity. The experimental paradigm follows a classic Block Design, where subjects are exposed to blocks of visual stimuli depicting faces with distinct emotional expressions: Happy, Sad, Angry, and Neutral. This block structure is essential for generating sustained neural responses that are detectable via fMRI. The data acquisition was performed using a high-resolution 3-Tesla (3T) MRI scanner employing a Gradient-echo Echo Planar Imaging (EPI) sequence. Key scanning parameters include a Repetition Time (TR) of 2.0 seconds and a spatial resolution of 3mm isotropic voxels. These high-fidelity specifications provide the necessary spatiotemporal granularity to distinguish subtle differences in neural activation patterns associated with different emotional states.
+
+\section{Preprocessing and Feature Extraction}
+
+\subsection{Signal Processing}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.9\textwidth]{temporal_statics_of_BOLD_signals.jpg}
+	\caption{Temporal Statics of BOLD Signal}
+	\label{fig:Temporal Statics of BOLD Signal}
+\end{figure}
+Raw fMRI data is inherently noisy and requires extensive signal processing to isolate the Blood-Oxygen-Level-Dependent (BOLD) signal from physiological and thermal noise. We initiate this phase with spatial smoothing using a Gaussian kernel with a Full Width at Half Maximum (FWHM) of 6mm. This step effectively suppresses high-frequency spatial noise and enhances the Signal-to-Noise Ratio (SNR), making distinct activation clusters more apparent. Following smoothing, we apply voxel-wise temporal standardization (Z-scoring) to normalize the signal intensity, thereby removing mean drift and scanner-related distinct inconsistencies. To capture the dynamic evolution of emotional states, we employ a temporal windowing strategy rather than analyzing the entire scan as a single unit. The continuous BOLD signal is segmented into sliding windows of 8 volumes (representing 16 seconds of brain activity) with a stride of 4 volumes (8 seconds). As depicted in Figure 4.1, which illustrates the BOLD signal statistics, this overlapping window approach increases the volume of training data and allows the model to learn transitions between states. Labels for these windows are assigned based on a strict threshold of greater than 70\% temporal consistency with the experimental stimulus, ensuring that only clear, unambiguous brain states are used for training.
+
+\subsection{Multi-Atlas Connectivity}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.9\textwidth]{Fig1_Atlas_Parcellation.png}
+	\caption{Harvard-Oxford Atlas Parcellation}
+	\label{fig:Harvard-Oxford atlas parcellation}
+\end{figure}
+
+A critical component of our feature extraction pipeline is the construction of functional connectivity matrices, which map the statistical dependencies between different brain regions. To capture a holistic view of brain organization, we extract these matrices using three complementary anatomical atlases, each offering a different resolution of brain segmentation. We utilize the \textbf{Harvard-Oxford atlas} (48 regions) to capture coarse, large-scale network interactions; the \textbf{Automated Anatomical Labeling (AAL) atlas} (116 regions) for intermediate resolution; and the \textbf{Destrieux atlas} (148 regions) for fine-grained cortical details. For every temporal window, a Pearson correlation matrix is computed for each atlas, representing the functional connectivity between regions. As shown in Figure 4.2, these matrices act as "fingerprints" of the brain's state during a specific emotion. Finally, the features derived from all three atlases are concatenated to form a comprehensive, multi-scale representation. This integration allows the deep learning model to leverage both broad network patterns and specific regional activities simultaneously.
+
+\section{Deep Learning Architecture}
+
+\subsection{CNN Design}
+\hspace{0.5cm}The core of the classification engine is a custom 3D Convolutional Neural Network (CNN) specifically optimized for processing functional connectivity matrices. The model treats these symmetric correlation matrices ($N \times N \times 1$) as 2D images, allowing it to exploit the spatial structure and topological relationships inherent in brain networks. The architecture features a robust backbone consisting of three convolutional blocks with increasing filter depths (32, 64, and 128) and $3 \times 3$ kernels. To ensure training stability and prevent overfitting a common challenge with high-dimensional fMRI data each convolutional block is immediately followed by Batch Normalization and a Dropout layer with a rate of 25\%. The classification head comprises a Global Average Pooling layer, which reduces the spatial dimensions, followed by fully connected Dense layers (128 and 64 neurons) and a final 50\% Dropout layer. This design forces the network to learn robust, distributed feature representations rather than memorizing noise.
+
+\subsection{Ensemble Strategy}
+\hspace{0.5cm}To further enhance prediction accuracy and generalizability, we implement a multi-atlas ensemble strategy. Instead of training a single monolithic model, separate CNNs are trained independently for each of the three atlases (Harvard-Oxford, AAL, and Destrieux). Each sub-model learns to extract features specific to the resolution of its corresponding atlas. The latent feature vectors generated by these independent networks are then fused by a meta-classifier. This results in a comprehensive 192-dimensional feature vector that combines coarse, intermediate, and fine-grained neural patterns. This ensemble approach significantly mitigates the risk of bias from any single anatomical parcellation scheme, resulting in a final emotion prediction that is more accurate and resilient to individual anatomical variations than any single-atlas model, while also explicitly validating the contribution of multiple scale-dependent brain region definitions to the overall predictive power, demonstrating that the fusion of diverse anatomical perspectives is critical for achieving state-of-the-art performance in neuroimaging-based classification tasks.
+\section{Training and Evaluation}
+
+\subsection{Training Configuration}
+\hspace{0.5cm}The model training is governed by the Adam optimizer, selected for its adaptive learning rate capabilities, initialized at 0.001. We employ Categorical Cross-Entropy as the loss function, which is standard for multi-class classification tasks (Happy vs. Sad vs. Angry vs. Neutral). To optimize the training process and prevent the model from overfitting to the training set, we utilize a set of dynamic callbacks. Specifically, an Early Stopping mechanism is implemented with a patience of 15 epochs, which halts training if the validation loss fails to improve, ensuring the model retains the weights from its best-performing epoch. Additionally, a Learning Rate Reduction on Plateau callback is used to fine-tune the optimization process when convergence slows down.
+
+\subsection{Validation Protocol}
+
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.9\textwidth]{cvp.png}
+	\caption{Cross Validation technique}
+	\label{fig:Cross Validation technique}
+\end{figure}
+
+To rigorously assess the model's ability to generalize to unseen individuals, we adopt a Leave-One-Subject-Out (LOSO) Cross-Validation strategy. In this protocol, the model is trained on data from $N-1$ subjects and tested on the remaining distinct subject. This process is repeated for all 16 subjects, ensuring that the reported performance metrics reflect the system's ability to decode emotions from a completely new brain, rather than simply memorizing the specific neural patterns of the training group. We benchmark our Deep Learning approach against traditional machine learning baselines, including Support Vector Machines (SVM) with RBF kernels, Random Forests (200 trees), and Logistic Regression. The system's performance is comprehensively evaluated using standard metrics: Accuracy, Precision, Recall, and F1-Score. Furthermore, Paired t-tests are conducted to establish the statistical significance of the improvements offered by our deep learning ensemble over the baseline methods.

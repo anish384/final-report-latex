@@ -1,0 +1,170 @@
+\chapter{SYSTEM DESIGN}
+
+
+
+\section{Architecture Diagram}
+\begin{figure}[ht]
+	\centering
+	% The % symbols at the end of lines are important to prevent "Bad Box" errors
+	\resizebox{\textwidth}{!}{%
+		\begin{tikzpicture}[
+			node distance=0.8cm,
+			% RENAMED 'step' to 'procstep' to avoid conflict with TikZ internal command
+			procstep/.style={rectangle, draw, thick, minimum width=3.5cm, minimum height=3.5cm, text width=3.2cm, align=center, fill=white, font=\small},
+			arrow/.style={->, >=stealth, very thick, color=blue!60!black}
+			]
+			
+			% Node 1: Input
+			\node[procstep] (input) {\textbf{Input Module} \\[0.5em] 4D BOLD Signal Data from fMRI Scanner};
+			
+			% Node 2: Preprocessing
+			\node[procstep, right=of input] (preprocess) {\textbf{Preprocessing Unit} \\[0.5em] Motion Correction, Spatial Normalization (to MNI Space), Temporal filtering};
+			
+			% Node 3: Deep Learning
+			\node[procstep, right=of preprocess] (dl) {\textbf{Deep Learning Deep Network} \\[0.5em] (e.g., CNN-LSTM)};
+			
+			% Node 4: Post-Processing
+			\node[procstep, right=of dl] (post) {\textbf{Post-Processing Module} \\[0.5em] Confidence Thresholding, Activation Filtering, Emotion Extraction, Spatial Coordinates};
+			
+			% Node 5: Output
+			\node[procstep, right=of post] (output) {\textbf{Report Generation \& Output Module} \\[0.5em] 1. Report Display (Emotion Label, Probability Score, Maps)};
+			
+			% Arrows
+			\draw[arrow] (input) -- (preprocess);
+			\draw[arrow] (preprocess) -- (dl);
+			\draw[arrow] (dl) -- (post);
+			\draw[arrow] (post) -- (output);
+			
+		\end{tikzpicture}%
+	}
+	\caption{System Pipeline and Modular Workflow}
+	\label{fig:system_pipeline}
+\end{figure}
+
+The architectural workflow of the Mind Matrix AI system is structured as a linear, five-stage pipeline designed to transform raw neuroimaging data into actionable clinical insights. The process commences with the Input Module, which ingests 4D BOLD signal data directly from the fMRI scanner, serving as the foundational entry point for analysis. This raw data is immediately routed to the Preprocessing Unit, where it undergoes rigorous conditioning through motion correction, spatial normalization to MNI space, and temporal filtering to ensure signal integrity and consistency across subjects. Following this, the refined data is processed by the Deep Learning Network, utilizing complex architectures such as CNN-LSTM to extract spatial features and model temporal dependencies within the brain activity. This stage leverages the multi-atlas ensemble for robust, scale-invariant feature extraction. The network is optimized through continuous feedback loops to maximize its generalization capability across diverse patient cohorts. The resulting predictions are then rigorously refined in the Post-Processing Module, which applies confidence thresholding, activation filtering, and spatial coordinate extraction to isolate significant neural events and reduce false positives. Crucially, this module also integrates attention mechanisms to highlight regions driving the final prediction. The workflow culminates in the Report Generation \& Output Module, which synthesizes the analysis into a comprehensive user display featuring the final emotion label, calculated probability scores, and visual maps of neural activation, providing clinicians with an intuitive summary of the derived neuroscience.
+
+
+\section{Use-Case Diagram}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{ucd.jpg}
+	\caption{Use-Case Diagram}
+	\label{fig:use-case diagram}
+\end{figure}
+
+\hspace{0.5cm}Mind Matrix AI use case flow outlines the primary interactions a User has with the system for emotion analysis, having strategically excluded the contentious function of truth/lie detection. The process is initiated by the user performing the Upload fMRI (.nii) action, feeding the system with the raw brain activity data. Upon processing this input, the user can immediately View 3D Brain Visualization, which serves as an intuitive visual representation of the neural activity recorded in the scan, allowing for rapid qualitative assessment of data quality. Concurrently, the system's core function, Predict Emotion, is executed to determine the subject's emotional state, a prediction which is then supported by the Get AI Explanation step that provides textual context and justification based on observed brain patterns, crucially citing the most influential brain regions as identified by the integrated attention mechanism. Finally, the system allows for data management through View Prediction History and Monitor Metrics, enabling users to track past results and check system performance, with a feature labeled Retries included to handle restarts or re-processing attempts, ensuring operational resilience against temporary processing failures or the need to refine preprocessing parameters.
+
+\section{Block Diagram}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{bd3.jpg}
+	\caption{Block Diagram}
+	\label{fig:Block Diagram}
+\end{figure}
+
+\hspace{0.5cm}The system's data lifecycle follows a structured, multi-stage pipeline designed to ensure data integrity and model reliability. The process begins with the Raw Data Source, where inputs are captured and passed through the Data Ingestion module, which handles format conversion and initial security checks. The workflow then enters Stage 1: Validation \& Cleaning, where rigid schema validation is applied, data is normalized, and missing values or statistical outliers are addressed to prepare a clean dataset, rejecting non-compliant or corrupted files to maintain data quality. Subsequently, the pipeline moves to Stage 2: Transformation \& Feature Engineering, where the data is re-scaled for algorithmic compatibility, the model is trained or executed, and performance metrics are evaluated. Artifacts from these processing stages, such as model weights or training logs, are archived in the Model/Report Artifacts storage, creating an immutable record for auditing and reproducibility. Following successful evaluation, the system proceeds to Stage 4: Deployment \& Analysis, where the model is pushed to the production environment via automated CI/CD tools. This stage includes a continuous feedback loop for monitoring performance, which directly feeds into the Dashboard/Alerts system to notify administrators of system health, while the final predictions are delivered as Actionable Output/Insights to end-users, completing the cycle and enabling the iterative refinement of the entire pipeline based on real-world usage data.
+\newpage
+
+\section{Activity Diagram}
+\begin{figure}[H]
+	\centering
+	\resizebox{0.3\textwidth}{!}{%
+		\begin{tikzpicture}[
+			node distance=1.5cm,
+			font=\sffamily,
+			>=stealth,
+			% Define styles for the flowchart shapes
+			startstop/.style={ellipse, draw, thick, align=center, minimum width=2.5cm, minimum height=1cm, fill=white},
+			process/.style={rectangle, draw, thick, rounded corners, align=center, minimum width=3.5cm, minimum height=1.2cm, fill=white},
+			decision/.style={diamond, draw, thick, align=center, aspect=2, minimum width=3cm, minimum height=1cm, fill=white},
+			arrow/.style={->, very thick, color=black}
+			]
+			
+			% --- Nodes ---
+			\node (start) [startstop] {Start};
+			
+			\node (upload) [process, below=of start] {Upload \\ fMRI data};
+			
+			\node (valid) [decision, below=of upload] {File \\ valid?};
+			
+			% Left side: Error path
+			\node (error) [process, left=1.5cm of valid] {Report \\ error};
+			
+			% Right side (Main path): Processing
+			\node (preprocess) [process, below=of valid] {Preprocess \\ data};
+			
+			\node (predict) [process, below=of preprocess] {Generate \\ predictions};
+			
+			\node (report) [process, below=of predict] {Create \\ PDF/report};
+			
+			\node (export) [process, below=of report] {Create \\ PDF/CSV Output};
+			
+			\node (end) [startstop, below=of export] {End};
+			
+			% --- Arrows ---
+			\draw[arrow] (start) -- (upload);
+			\draw[arrow] (upload) -- (valid);
+			
+			% Decision Arrows
+			\draw[arrow] (valid) -- node[right, font=\small] {Yes} (preprocess);
+			\draw[arrow] (valid) -- node[above, font=\small] {No} (error);
+			
+			% Main Path Connections
+			\draw[arrow] (preprocess) -- (predict);
+			\draw[arrow] (predict) -- (report);
+			\draw[arrow] (report) -- (export);
+			\draw[arrow] (export) -- (end);
+			
+			% Error Path Rejoining
+			% Drawing a line from Error down and turning right to join the Report node
+			\draw[arrow] (error) |- (report);
+			
+		\end{tikzpicture}%
+	}
+	\caption{Operational Workflow and Logic Control}
+	\label{fig:logic_flowchart}
+\end{figure}
+
+\hspace{0.5cm}This flowchart represents the workflow of Mind Matrix AI, an fMRI-based emotion decoding system. The process starts when users upload fMRI data in .nii format. The system checks if the file is valid, if not, it moves to report error and stops. If valid, the system proceeds to preprocess the data, performing smoothing, normalization, and temporal segmentation using tools like NiBabel and Nilearn. This critical step ensures all data conforms to a standard MNI space, mitigating subject-specific variability. After preprocessing, the 3D CNN model generates emotion predictions such as Calm, Afraid, Delighted, Depressed, or Excited. The multi-atlas ensemble strategy is integrated here to enhance prediction robustness across diverse anatomical parcellations. The system then creates a PDF or CSV report that includes prediction results, confidence scores, and visualizations of brain activity, utilizing attention maps to transparently justify the final classification based on specific neural features. Finally, the workflow ends, ensuring a smooth, automated pipeline from raw fMRI input to interpretable output.
+
+\section{Data flow diagram}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.6\textwidth]{dfd0.jpg}
+	\caption{DFD level 0}
+	\label{fig:dfd level 0}
+\end{figure}
+
+\hspace{0.5cm}This diagram illustrates the high-level scope of the Mind Matrix AI System. It represents the entire system as a single process (the central circle) and defines its boundaries by showing how it interacts with external entities (the rectangles) and the data that flows between them. The core node (0.0) represents the complete application software. It acts as the central hub that processes fMRI inputs, manages AI communication, and generates visualizations and reports. The primary operator (researcher or clinician) initiates the analysis. They provide the input files and control the system via commands (settings, history). Figure 6.5 depicts the Level 0 Data Flow Diagram (Context Diagram) for the Mind Matrix AI System. It highlights the system's boundary, showing the intake of raw .nii files from fMRI scanners and user commands. It also illustrates the integration with the external Gemini AI service for inference, which processes the preprocessed feature vectors to produce the final emotion prediction and confidence scores. The diagram further details the output streams: the distribution of final diagnostic reports (PDF/CSV) and interactive 3D visualizations (e.g., brain activation maps) to the user. This context diagram rigorously defines the system as a black box, clarifying that its sole purpose is transforming raw neuroimaging data and operator requests into actionable, interpretable clinical outputs, thereby formally setting the functional scope.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1\textwidth]{cropped.jpg}
+	\caption{DFD level 1}
+	\label{fig:dfd level 1}
+\end{figure}
+
+This Level 1 Data Flow Diagram explodes the central process of the Context Diagram into four distinct functional subsystems to illustrate the internal data processing logic of the Mind Matrix AI.
+
+The flow begins with 1.0 Data Ingestion \& Preprocessing, where raw .nii files are first validated for integrity and format compliance. If valid, the data is normalized (e.g., spatial registration to MNI space), motion-corrected, and temporally segmented. This clean, preprocessed data is then immediately archived in the Raw Data Storage for long-term auditability and potential future re-analysis, before the segmented volumes are passed downstream, ensuring adherence to clinical data standards.
+
+The core computational work resides in 2.0 Deep Learning Model Inference, which receives the standardized data volumes. This subsystem utilizes the pre-trained multi-atlas CNN ensemble to efficiently generate emotion labels (e.g., Calm, Delighted) and associated confidence scores. During this stage, the integrated attention mechanisms are also executed, producing activation maps that highlight the neural regions most influential in the final prediction, thereby providing critical interpretability data.
+
+
+\section{Sequence Diagram}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1\textwidth]{seq.jpg}
+	\caption{Sequence Diagram}
+	\label{fig:Sequence Diagram}
+\end{figure}
+
+\hspace{0.5cm}This sequence diagram illustrates the chronological flow of operations within the Mind Matrix AI system. The process initiates when the User interacts with the interface to upload raw fMRI data. The Backend receives this data and triggers the Model to first preprocess the inputs and then perform the specific emotion classification tasks. Once inference is complete, the results are returned to the Frontend for immediate visualization. Subsequently, a request to generate a detailed summary is processed by the Backend, culminating in the User receiving a downloadable PDF/CSV report of the analysis.
+
+\newpage
+\section{Summary}
+
+\hspace{0.5cm}This project provides a comprehensive structural and functional overview of the Mind Matrix AI system, detailing its design through various architectural and behavioral models. The system is built upon a linear, five-stage architectural pipeline that ensures the seamless transformation of raw 4D BOLD signals into interpretable clinical insights, progressing from data ingestion and rigorous preprocessing to deep learning inference and final report generation. This structural foundation is complemented by the data lifecycle and block design, which emphasize strict validation protocols, feature engineering, and continuous performance monitoring to maintain model reliability and data integrity within the production environment.
+
+The operational logic of the platform is further defined through activity and data flow diagrams, which map the specific pathways of information processing. These models illustrate how the system decomposes complex tasks into distinct functional subsystems ranging from data ingestion and internal model inference to database management while strictly enforcing valid operational workflows and error handling. Finally, the interaction dynamics are captured in the sequence and use-case diagrams, which highlight the chronological communication between the frontend, backend, and AI components, ensuring that users can intuitively upload data, visualize 3D brain activity, and receive explained emotion predictions in a cohesive, user-centric environment.
